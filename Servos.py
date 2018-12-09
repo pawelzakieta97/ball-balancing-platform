@@ -4,7 +4,7 @@ from Model import Model
 #import serial
 
 class Servos:
-    def __init__(self, armLength = 1.8, joint2link = 4.0, minAngle = -60, maxAngle= 60, maxTilt = 30):
+    def __init__(self, armLength = 1.8, joint2link = 4.0, minAngle = -60, maxAngle= 60, maxTilt = 25):
         self.r= armLength
         self.d = joint2link
         self.minAngle = minAngle
@@ -13,8 +13,8 @@ class Servos:
         
     def applySteering(self, ax, ay):
         g = 9.81
-        ax = min(max(ax,-g),g)
-        ay = min(max(ay,-g),g)
+        ax = min(max(ax,-g*0.5),g*0.5)
+        ay = min(max(ay,-g*0.5),g*0.5)
         d = self.d
         r = self.r
         alfa = min(max(np.arcsin(-5*ay/3/g), np.deg2rad(-self.maxTilt)),np.deg2rad(self.maxTilt))

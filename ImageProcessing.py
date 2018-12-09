@@ -9,8 +9,8 @@ from Controller import Controller
 import numpy as np
 import time
 
-class ImageProcessor(threading.Thread, resX = 480, resY = 360):
-    def __init__(self, owner):
+class ImageProcessor(threading.Thread):
+    def __init__(self, owner, resX = 480, resY = 360):
         super(ImageProcessor, self).__init__()
         self.stream = io.BytesIO()
         self.event = threading.Event()
@@ -71,8 +71,8 @@ class ImageProcessor(threading.Thread, resX = 480, resY = 360):
                     with self.owner.lock:
                         self.owner.pool.append(self)
 
-class ProcessOutput(object, controller):
-    def __init__(self):
+class ProcessOutput(object):
+    def __init__(self, controller):
         self.done = False
         self.ball_position = [0,0]
         self.newPosRdy = False
@@ -95,8 +95,8 @@ class ProcessOutput(object, controller):
             # a spare one
             if self.frame % 100 == 0:
                 print(self.frame)
-            if self.frame == 500:
-                self.done = True
+            #if self.frame == 500:
+                #self.done = True
             if self.processor:
                 self.processor.event.set()
             with self.lock:

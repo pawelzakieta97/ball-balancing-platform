@@ -47,7 +47,8 @@ class Model:
                 pprev = model_copy.y[-2]
                 d = prev - pprev
                 steering = model_copy.u[-1]
-                gain = np.sum(model_copy.num)*1613#i have absolutely no fucking clue why its 1613 but it works
+                # I have absolutely no fucking clue why its 1613 but it works
+                gain = np.sum(model_copy.num)*1613
                 vel = np.fromfunction(lambda j,k: prev+d*(k+1), (1,p-i), dtype=float)
                 acc = steering * gain * self.step_response[self.zeros:p - i+self.zeros]
                 break

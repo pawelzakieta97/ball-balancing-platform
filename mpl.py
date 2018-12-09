@@ -28,11 +28,12 @@ gpc.updateK()
 Yz = 0.1*np.ones(500)
 servos = Servos()
 fi = np.array([])
-# for i in range(0,400):
-#     change = gpc.getSteering(Yz)
-#     uGPC = model2.u[-1] + change
-#     model2.update(uGPC)
-#     fi = np.append(fi, [uGPC])
+
+test = np.arange(0,10)
+for t in test:
+    t = t+69
+
+print(test)
 
 #plt.step(range(0,model2.y.size-model2.yStart), 100*model2.y[model2.yStart:], where = 'post')
 plt.step(range(0,step1.size), step1, where = 'post')

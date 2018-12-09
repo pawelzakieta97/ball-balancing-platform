@@ -25,5 +25,6 @@ with picamera.PiCamera() as camera:
         if output.newPosRdy:
             print(output.ball_position)
             output.newPosRdy = False
-        camera.wait_recording(1)
+        camera.wait_recording(10)
+        output.done = True
     camera.stop_recording()

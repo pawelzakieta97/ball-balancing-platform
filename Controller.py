@@ -49,10 +49,20 @@ class Controller():
         self.gpc["y"].updateK()
         self.servos = Servos()
         self.setPoint = {"x": np.array(150*[0.1]), "y": np.array(150*[0.1])}
-        self.der1 = np.array([])
-        self.der2 = np.array([])
+        self.steering_enable = True
 
-    def update(self, position, timeOverride = -10):
+    #clears memory and updates "begin" value, leaves
+    def clear(self, leave=20):
+        now = int(round(time.time() * 1000)) - self.begin
+        shift = now - self.begin
+        self.begin = now
+        self.samples['t'] = self.samples['t'][-leave:]
+        for i in range(0,self.samples['t']):
+            self.samples['t'][i] -= shift/1000
+        self.samples['x'] = self.samples['x'][-leave:]
+        self.samples['y'] = self.samples['y'][-leave:]
+
+    def update(self, position, timeOverride=-10):
         now = timeOverride
         if timeOverride == -10:
             now = int(round(time.time() * 1000))-self.begin
@@ -62,16 +72,10 @@ class Controller():
         self.samples["t"] = np.append(self.samples["t"], float(now/1000))
         ax = 0
         ay = 0
-        if self.samples["x"].size > self.gpc["x"].model.num.size+4:
-            #self.samples["x"] = self.samples["x"][1:]
-            #self.samples["y"] = self.samples["y"][1:]
-            #self.samples["t"] = self.samples["t"][1:]
+        if self.samples["x"].size > self.gpc["x"].model.num.size:
             K = generateK(self.poly, self.samples["t"][-self.samples_num:])
             self.parameters["x"] = np.dot(K, self.samples["x"][-self.samples_num:])
             self.parameters["y"] = np.dot(K, self.samples["y"][-self.samples_num:])
-
-            #self.samples["ax"] = self.samples["ax"][1:]
-            #self.samples["ay"] = self.samples["ay"][1:]
 
             self.virtualSamples["x"] = np.array([polyValue(self.parameters["x"], float(now)/1000-(self.gpc["x"].model.den.size-i-1)*self.Tp) for i in range(0, self.gpc["x"].model.den.size)])
             self.virtualSamples["y"] = np.array([polyValue(self.parameters["y"], float(now)/1000-(self.gpc["y"].model.den.size-i-1)*self.Tp) for i in range(0, self.gpc["y"].model.den.size)])
@@ -81,20 +85,10 @@ class Controller():
                 ax = self.pid["x"].update(self.virtualSamples["x"][-1], self.setPoint["x"][0])
                 ay = self.pid["y"].update(self.virtualSamples["y"][-1], self.setPoint["y"][0])
 
-                derParams = polyDer(self.parameters["x"])
-                derValue = polyValue(derParams, float(now) / 1000)
-
-                self.der1 = np.append(self.der1, [derValue])
-                self.der2 = np.append(self.der2, (self.samples['x'][-1] - self.samples['x'][-2]) / self.Tp)
-                if self.der1.size == 150:
-                    a =1
 
             if self.kind == "PID_1":
                 derParams = polyDer(self.parameters["x"])
                 derValue = polyValue(derParams, float(now)/1000)
-
-                self.der1 = np.append(self.der1, [derValue])
-                self.der2 = np.append(self.der2, (self.samples['x'][-1]-self.samples['x'][-2])/self.Tp)
 
                 der2Value = polyValue(polyDer(derParams), now/1000)
                 ax = self.pid["x"].update(self.virtualSamples["x"][-1], self.setPoint["x"][0], derOverride=derValue, der2Override=der2Value)
@@ -114,12 +108,13 @@ class Controller():
                 ax = self.samples["ax"][-1] + self.gpc["x"].getSteering(self.setPoint["x"])
                 ay = self.samples["ay"][-1] + self.gpc["y"].getSteering(self.setPoint["y"])
 
-        self.servos.applySteering(ax, ay)
+        if self.steering_enable:
+            self.servos.applySteering(ax, ay)
         self.samples["ax"] = np.append(self.samples["ax"], [ax])
         self.samples["ay"] = np.append(self.samples["ay"], [ay])
             
     
-c = Controller(kind="PID_1")
+c = Controller(kind="GPC")
 delay = 0.2
 Tp = 0.025
 num = np.array(np.append(np.zeros(int(delay/Tp)), [0, 0.0003125, 0.0003125]))
