@@ -74,7 +74,7 @@ class Controller():
         self.samples['x'] = self.samples['x'][-leave:]
         self.samples['y'] = self.samples['y'][-leave:]
 
-    #this method is called every time new frame has been processed.
+    #this method is called every time new frame has been processed by ImageProcessing class object (58th line).
     #Agruments:
     #   position- x and y coordinates of the ball
     #   timeOverride - if not specified, the controller object will assume that the ball's position is accurate

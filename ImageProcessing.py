@@ -53,6 +53,8 @@ class ImageProcessor(threading.Thread):
                         center = [float(M["m10"])/M["m00"], float(M["m01"])/M["m00"]]
                         self.owner.ball_position = center
                         #self.owner.newPosRdy = True
+
+                        #here the calculated position is given to the controller so that it can process it and apply steering
                         self.owner.controller.update(center)
                     
                     if self.owner.frame % 100 == 0:
