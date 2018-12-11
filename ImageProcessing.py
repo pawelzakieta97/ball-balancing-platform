@@ -50,7 +50,7 @@ class ImageProcessor(threading.Thread):
                     M = cv2.moments(mask)
                     center = [0,0]
                     if M["m00"] != 0:
-                        center = [int(M["m10"]/M["m00"]), int(M["m01"]/M["m00"])]
+                        center = [float(M["m10"])/M["m00"], float(M["m01"])/M["m00"]]
                         self.owner.ball_position = center
                         #self.owner.newPosRdy = True
                         self.owner.controller.update(center)
@@ -59,7 +59,7 @@ class ImageProcessor(threading.Thread):
                         print("processing time in millis: "+str(self.owner.getCurrentTime()-self.owner.processing_begin))
                         name = "image"+str(self.owner.frame)+".jpg"
                         namemask = "image"+str(self.owner.frame)+"_mask.jpg"
-                        cv2.circle(image, (center[0],center[1]), 10, (0,0,255), 2)
+                        cv2.circle(image, (int(center[0]),int(center[1])), 10, (0,0,255), 2)
                         cv2.imwrite(name, image)
                         cv2.imwrite(namemask, mask)
                 finally:
