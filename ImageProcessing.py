@@ -1,13 +1,14 @@
 import io
 import time
 import threading
-import picamera
+#import picamera
 import cv2
-from picamera.array import PiRGBArray
+#from picamera.array import PiRGBArray
 from Controller import Controller
 
 import numpy as np
 import time
+
 
 class ImageProcessor(threading.Thread):
     def __init__(self, owner, resX = 480, resY = 360):
@@ -19,7 +20,27 @@ class ImageProcessor(threading.Thread):
         self.start()
         self.resX = resX
         self.resY = resY
+        self.resize = 150 # resolution after downscaling
+        self.FOV = 50 # camera angle in degrees, NEEDS TO BE CHECKED!!!!!!!!
+        self.h = 0.25 # how high the camera is above the platform
+        self.d = self.resize/2/np.tan(np.deg2rad(self.FOV/2))   # a helper value. it shows how many pixels away from the camera
+                                                    # is the matrix (makes sense on a drawing)
 
+    # this methods converts the position of the ball center in pixel coordinates into platform based coordinates system
+    # in meters. These values will be used by the controller
+    def pix2meters(self, x, y):
+        x -= self.resize/2
+        y += self.resize/2
+        A = self.owner.controller.alfa
+        B = self.owner.controller.beta
+        sA = np.sin(A)
+        sB = np.sin(B)
+        cA = np.cos(A)
+        cB = np.cos(B)
+        denominator = -x*sB+y*sA*cB+self.d*cA*cB
+        x = self.h*(x*cA*cB*cB + y*sA*sB*cA*cB + self.d*sB*cA*cA*cB) / denominator - self.h*sB*cA
+        y = self.h*(y*cA*cA*cB - self.d*sA*cA*cB) / denominator + self.h*sA
+        return[x, y]
     def run(self):
         # This method runs in a separate thread
         imnum = 0
@@ -34,7 +55,7 @@ class ImageProcessor(threading.Thread):
                     data = np.fromstring(self.stream.getvalue(), dtype = np.uint8)
                     image = cv2.imdecode(data, 1)
                     image = image[0:self.resY-1, int((self.resX-self.resY)/2):int((self.resX-self.resY)/2)+self.resY]
-                    image = cv2.resize(image,(200,200))
+                    image = cv2.resize(image,(self.resize,self.resize))
                     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
                     lower_green = np.array([40,150,10])
                     upper_green = np.array([90,255,255])
@@ -52,10 +73,9 @@ class ImageProcessor(threading.Thread):
                     if M["m00"] != 0:
                         center = [float(M["m10"])/M["m00"], float(M["m01"])/M["m00"]]
                         self.owner.ball_position = center
-                        #self.owner.newPosRdy = True
 
                         #here the calculated position is given to the controller so that it can process it and apply steering
-                        self.owner.controller.update(center)
+                        self.owner.controller.update(self.pix2meters(center[0], center[1]))
                     
                     if self.owner.frame % 100 == 0:
                         print("processing time in millis: "+str(self.owner.getCurrentTime()-self.owner.processing_begin))
@@ -131,3 +151,7 @@ class ProcessOutput(object):
             proc.terminated = True
             proc.join()
 
+c = Controller()
+o = ProcessOutput(c)
+i = ImageProcessor(o)
+print(i.pix2meters(0, 0))

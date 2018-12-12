@@ -17,16 +17,14 @@ class Servos:
         ay = min(max(ay,-g*0.5),g*0.5)
         d = self.d
         r = self.r
-        alfa = min(max(np.arcsin(-5*ay/3/g), np.deg2rad(-self.maxTilt)),np.deg2rad(self.maxTilt))
-        #print(np.rad2deg(alfa))
-        beta = min(max(np.arcsin(5*ax/3/g/np.cos(alfa)), np.deg2rad(-self.maxTilt)),np.deg2rad(self.maxTilt))
-        #print(d/r*np.sin(alfa))
+        alfa = min(max(np.arcsin(-5*ay/3/g), np.deg2rad(-self.maxTilt)), np.deg2rad(self.maxTilt))
+        beta = min(max(np.arcsin(5*ax/3/g/np.cos(alfa)), np.deg2rad(-self.maxTilt)), np.deg2rad(self.maxTilt))
         fi1 = np.rad2deg(np.arcsin(d/r*np.sin(alfa)))
         fi2 = np.rad2deg(np.arcsin(d/r*np.cos(alfa)*np.sin(beta)))
         fi1 = min(max(fi1, self.minAngle), self.maxAngle)
         fi2 = min(max(fi2, self.minAngle), self.maxAngle)
         self.send(fi1,fi2)
-        return (fi1, fi2)
+        return [alfa, beta]
         
     def send(self, a1, a2):
         #ser = serial.Serial('/dev/ttyACM1',115200)
