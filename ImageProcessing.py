@@ -4,7 +4,6 @@ import threading
 #import picamera
 import cv2
 #from picamera.array import PiRGBArray
-from Controller import Controller
 
 import numpy as np
 import time
@@ -30,7 +29,7 @@ class ImageProcessor(threading.Thread):
     # in meters. These values will be used by the controller
     def pix2meters(self, x, y):
         x -= self.resize/2
-        y += self.resize/2
+        y = -y + self.resize/2
         A = self.owner.controller.alfa
         B = self.owner.controller.beta
         sA = np.sin(A)
@@ -52,31 +51,48 @@ class ImageProcessor(threading.Thread):
                     self.owner.frame += 1
                     self.stream.seek(0)
                     # Read the image and do some processing on it
-                    data = np.fromstring(self.stream.getvalue(), dtype = np.uint8)
+
+                    #i'm not sure what is going on here, it reads some raw data and converts it to an array i guess
+                    data = np.fromstring(self.stream.getvalue(), dtype=np.uint8)
                     image = cv2.imdecode(data, 1)
+
+                    # cropping the image to a square (height stays the same but sides are cut off)
                     image = image[0:self.resY-1, int((self.resX-self.resY)/2):int((self.resX-self.resY)/2)+self.resY]
-                    image = cv2.resize(image,(self.resize,self.resize))
-                    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-                    lower_green = np.array([40,150,10])
-                    upper_green = np.array([90,255,255])
+                    # downsampling the image to resolution resize x resize to speed up the processing
+                    image = cv2.resize(image, (self.resize, self.resize))
+                    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)# converting to hsv color space
 
-                    lower_blue = np.array([90,150,10])
-                    upper_blue = np.array([135, 255,255])
-                    
-                    mask = cv2.inRange(hsv, lower_blue, upper_blue)
+                    # definition of different colors ranges in hsv
+                    lower_green = np.array([40, 150, 10])
+                    upper_green = np.array([90, 255, 255])
+
+                    lower_blue = np.array([90, 150, 10])
+                    upper_blue = np.array([135, 255, 255])
+
+                    lower_orange = np.array([10, 190, 10])
+                    upper_orange = np.array([30, 255, 255])
+
+                    # pixels that are between sepcified color range are white, all the rest is black
+                    mask = cv2.inRange(hsv, lower_orange, upper_orange)
                     denoising = 3
-                    mask = cv2.erode(mask, None, iterations = denoising)
-                    mask = cv2.dilate(mask, None, iterations = 2*denoising)
-                    mask = cv2.erode(mask, None, iterations = denoising)
-                    M = cv2.moments(mask)
-                    center = [0,0]
-                    if M["m00"] != 0:
-                        center = [float(M["m10"])/M["m00"], float(M["m01"])/M["m00"]]
-                        self.owner.ball_position = center
 
+                    # https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html
+                    mask = cv2.erode(mask, None, iterations=denoising)
+                    mask = cv2.dilate(mask, None, iterations=2*denoising)
+                    mask = cv2.erode(mask, None, iterations=denoising)
+
+                    # M object will be used to find the center of mass of the white pixels
+                    M = cv2.moments(mask)
+                    # definig default ball position in case no pixel in given range is detected
+                    center = [self.resize/2, self.resize/2]
+                    if M["m00"] != 0:
+                        # calculating center of mass of the white pixels- this will be the center of the ball
+                        center = [float(M["m10"])/M["m00"], float(M["m01"])/M["m00"]]
                         #here the calculated position is given to the controller so that it can process it and apply steering
                         self.owner.controller.update(self.pix2meters(center[0], center[1]))
-                    
+
+                    # saving image every 100 frames to see if image is processed correctly.
+                    # Should be disabled in final version because it takes a lot of time to save an image
                     if self.owner.frame % 100 == 0:
                         print("processing time in millis: "+str(self.owner.getCurrentTime()-self.owner.processing_begin))
                         name = "image"+str(self.owner.frame)+".jpg"
@@ -85,6 +101,7 @@ class ImageProcessor(threading.Thread):
                         cv2.imwrite(name, image)
                         cv2.imwrite(namemask, mask)
                 finally:
+                    # some stream and thread managing stuff
                     # Reset the stream and event
                     self.stream.seek(0)
                     self.stream.truncate()
@@ -96,7 +113,6 @@ class ImageProcessor(threading.Thread):
 class ProcessOutput(object):
     def __init__(self, controller):
         self.done = False
-        self.ball_position = [0,0]
         self.newPosRdy = False
         # Construct a pool of 4 image processors along with a lock
         # to control access between threads
@@ -106,10 +122,10 @@ class ProcessOutput(object):
         self.processor = None
         self.processing_begin = 0
         self.controller = controller
+
     def getCurrentTime(self):
         return int(round(time.time() * 1000))
 
-        
     def write(self, buf):
         self.processing_begin = self.getCurrentTime()
         if buf.startswith(b'\xff\xd8'):
@@ -117,8 +133,6 @@ class ProcessOutput(object):
             # a spare one
             if self.frame % 100 == 0:
                 print(self.frame)
-            #if self.frame == 500:
-                #self.done = True
             if self.processor:
                 self.processor.event.set()
             with self.lock:
@@ -150,8 +164,3 @@ class ProcessOutput(object):
                     pass # pool is empty
             proc.terminated = True
             proc.join()
-
-c = Controller()
-o = ProcessOutput(c)
-i = ImageProcessor(o)
-print(i.pix2meters(0, 0))

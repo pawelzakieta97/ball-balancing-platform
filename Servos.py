@@ -23,11 +23,11 @@ class Servos:
         fi2 = np.rad2deg(np.arcsin(d/r*np.cos(alfa)*np.sin(beta)))
         fi1 = min(max(fi1, self.minAngle), self.maxAngle)
         fi2 = min(max(fi2, self.minAngle), self.maxAngle)
-        self.send(fi1,fi2)
+        self.send(fi1, fi2)
         return [alfa, beta]
         
     def send(self, a1, a2):
         #ser = serial.Serial('/dev/ttyACM1',115200)
-        #ser.write({fi1})
-        #ser.write({fi2})
+        #ser.write({fi1-self.minAngle})
+        #ser.write({fi2-self.minAngle})
         return 0
