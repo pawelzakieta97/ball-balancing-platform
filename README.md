@@ -1,10 +1,16 @@
 # Ball balancing platform
-![image](https://user-images.githubusercontent.com/28107745/213281236-070dd538-9632-48ec-9f59-9eeda99e9bdf.png)
+
+![image](https://user-images.githubusercontent.com/28107745/213289347-ad10fcf1-6afd-453d-8df2-7952b65f7351.png)
 
 This repository contains a source code and report of a robotics project.
 The aim of the project was to design, construct and control a platform that could balance a ball, as well as make it follow a given trajectory.
 Constructing a real-world unstable system allowed for a comparison between PID and model predictive control system.
 Footage comapring the platform operating with different control systems is uploaded to `report` directory 
+
+Video below showcases following a circular trajectory with a radius of 7cm using a model predictie control:
+
+https://user-images.githubusercontent.com/28107745/213289066-59c10ac9-6908-4360-b5ae-b6560e022d09.mp4
+
 
 ## Feedback loop
 Data fed to the control system was heavily preprocessed according to the feedback loop.
