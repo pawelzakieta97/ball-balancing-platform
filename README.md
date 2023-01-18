@@ -4,6 +4,7 @@
 This repository contains a source code and report of a robotics project.
 The aim of the project was to design, construct and control a platform that could balance a ball, as well as make it follow a given trajectory.
 Constructing a real-world unstable system allowed for a comparison between PID and model predictive control system.
+Footage comapring the platform operating with different control systems is uploaded to `report` directory 
 
 ## Feedback loop
 Data fed to the control system was heavily preprocessed according to the feedback loop.
